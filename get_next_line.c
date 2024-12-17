@@ -6,60 +6,59 @@
 /*   By: tjooris <tjooris@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/15 15:20:29 by tjooris           #+#    #+#             */
-/*   Updated: 2024/12/15 15:21:17 by tjooris          ###   ########.fr       */
+/*   Updated: 2024/12/17 14:18:18 by tjooris          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <string.h>
 #include <unistd.h>
-#include <stdbool.h>
 #include "get_next_line.h"
 
-static bool	reserve(t_buffer *buffer, size_t size)
+static int	reserve(t_buffer *buffer, size_t size)
 {
-	size_t	new_capacity;
+	size_t	ncapacity;
 	char	*reallocated;
 
 	if (buffer->capacity - buffer->length < size)
 	{
 		if (buffer->capacity * 2 - buffer->length < size)
-			new_capacity = buffer->length + size;
+			ncapacity = buffer->length + size;
 		else
-			new_capacity = buffer->capacity * 2;
-		reallocated = malloc(new_capacity);
-		if (reallocated == NULL)
-			return (false);
+			ncapacity = buffer->capacity * 2;
+		reallocated = malloc(ncapacity);
+		if (!reallocated)
+			return (0);
 		if (buffer->data)
 			ft_memmove(reallocated, buffer->data, buffer->length);
 		free(buffer->data);
 		buffer->data = reallocated;
-		buffer->capacity = new_capacity;
+		buffer->capacity = ncapacity;
 	}
-	return (true);
+	return (1);
 }
 
-static int	read_until_nl(int fd, t_buffer *buffer, char **eol_pos)
+static int	read_un_nl(int fd, t_buffer *buffer, char **eol_pos)
 {
-	size_t	eol_start;
-	ssize_t	read_count;
+	size_t	eol;
+	ssize_t	count;
 
-	eol_start = 0;
-	read_count = BUFFER_SIZE;
-	while (true)
+	eol = 0;
+	count = BUFFER_SIZE;
+	while (1)
 	{
-		*eol_pos = ft_memchr(buffer->data + eol_start, '\n',
-				buffer->length - eol_start);
-		if (*eol_pos != NULL || read_count != BUFFER_SIZE)
+		*eol_pos = ft_memchr(buffer->data + eol, '\n',
+				buffer->length - eol);
+		if (*eol_pos != NULL || count != BUFFER_SIZE)
 			break ;
-		eol_start = buffer->length;
+		eol = buffer->length;
 		if (!reserve(buffer, BUFFER_SIZE))
 			return (-1);
-		read_count = read(fd, buffer->data + buffer->length, BUFFER_SIZE);
-		if (read_count == -1)
+		count = read(fd, buffer->data + buffer->length, BUFFER_SIZE);
+		if (count == -1)
 			break ;
-		buffer->length += read_count;
+		buffer->length += count;
 	}
-	return (read_count);
+	return (count);
 }
 
 static char	*get_line(t_buffer *buffer, char *eol_pos)
@@ -88,7 +87,7 @@ char	*get_next_line(int fd)
 	char			*line;
 
 	line = NULL;
-	read_count = read_until_nl(fd, &buffer, &eol_pos);
+	read_count = read_un_nl(fd, &buffer, &eol_pos);
 	if (read_count != -1 && buffer.length > 0)
 		line = get_line(&buffer, eol_pos);
 	if (read_count <= 0 || line == NULL)
