@@ -6,7 +6,7 @@
 /*   By: tjooris <tjooris@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/15 15:20:37 by tjooris           #+#    #+#             */
-/*   Updated: 2024/12/15 15:20:39 by tjooris          ###   ########.fr       */
+/*   Updated: 2024/12/20 13:26:48 by tjooris          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,57 +15,54 @@
 #include <stddef.h>
 #include "get_next_line.h"
 
-void	*ft_memcpy(void *dst, const void *src, size_t n)
+void	*ft_memcpy(void *dest, const void *src, size_t n)
 {
 	size_t	i;
 
 	i = 0;
-	while (i + sizeof(ptrdiff_t) < n)
-	{
-		*(ptrdiff_t *)(dst + i) = *(ptrdiff_t *)(src + i);
-		i += sizeof(ptrdiff_t);
-	}
+	if (dest == 0 && src == 0)
+		return (dest);
 	while (i < n)
 	{
-		*(unsigned char *)(dst + i) = *(unsigned char *)(src + i);
-		++i;
+		*(unsigned char *)(dest + i) = *(unsigned char *)(src + i);
+		i++;
 	}
-	return (dst);
+	return (dest);
 }
 
-void	*ft_memmove(void *dst, const void *src, size_t len)
+void	*ft_memmove(void *dest, const void *src, size_t n)
 {
-	if (dst <= src || dst >= src + len)
-		ft_memcpy(dst, src, len);
+	unsigned char	*d;
+	unsigned char	*s;
+
+	if ((dest == 0 && src == 0) || n == 0)
+		return (dest);
+	d = (unsigned char *)dest;
+	s = (unsigned char *)src;
+	if (d > s)
+	{
+		while (n > 0)
+		{
+			*(d + n - 1) = *(s + n - 1);
+			n--;
+		}
+	}
 	else
-	{
-		while (len >= sizeof(ptrdiff_t))
-		{
-			len -= sizeof(ptrdiff_t);
-			*(ptrdiff_t *)(dst + len) = *(ptrdiff_t *)(src + len);
-		}
-		while (len > 0)
-		{
-			--len;
-			*(unsigned char *)(dst + len) = *(unsigned char *)(src + len);
-		}
-	}
-	return (dst);
+		while (n-- > 0)
+			*(d++) = *(s++);
+	return (dest);
 }
 
-void	*ft_memchr(const void *s, int c, size_t n)
+void	*ft_memchr(const void *memoryBlock, int searchedChar, size_t size)
 {
-	unsigned char	*cp;
-
-	cp = (unsigned char *)s;
-	c = (unsigned char)c;
-	while (n--)
+	while (size > 0)
 	{
-		if (*cp == c)
-			return (cp);
-		++cp;
+		if (*(unsigned char *)memoryBlock == (unsigned char)searchedChar)
+			return ((void *)memoryBlock);
+		memoryBlock++;
+		size--;
 	}
-	return (NULL);
+	return (0);
 }
 
 char	*ft_strndup(char *ptr, size_t n)

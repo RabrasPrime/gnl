@@ -6,7 +6,7 @@
 /*   By: tjooris <tjooris@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/15 15:20:29 by tjooris           #+#    #+#             */
-/*   Updated: 2024/12/17 14:18:18 by tjooris          ###   ########.fr       */
+/*   Updated: 2024/12/20 13:38:16 by tjooris          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,61 +14,60 @@
 #include <unistd.h>
 #include "get_next_line.h"
 
-static int	reserve(t_buffer *buffer, size_t size)
+static int	ensure_capacity(t_buffer *buffer, size_t additional_size)
 {
-	size_t	ncapacity;
-	char	*reallocated;
+	size_t	new_capacity;
+	char	*new_data;
 
-	if (buffer->capacity - buffer->length < size)
+	if (buffer->capacity - buffer->length < additional_size)
 	{
-		if (buffer->capacity * 2 - buffer->length < size)
-			ncapacity = buffer->length + size;
+		if (buffer->capacity * 2 - buffer->length < additional_size)
+			new_capacity = buffer->length + additional_size;
 		else
-			ncapacity = buffer->capacity * 2;
-		reallocated = malloc(ncapacity);
-		if (!reallocated)
+			new_capacity = buffer->capacity * 2;
+		new_data = malloc(new_capacity);
+		if (!new_data)
 			return (0);
 		if (buffer->data)
-			ft_memmove(reallocated, buffer->data, buffer->length);
+			ft_memmove(new_data, buffer->data, buffer->length);
 		free(buffer->data);
-		buffer->data = reallocated;
-		buffer->capacity = ncapacity;
+		buffer->data = new_data;
+		buffer->capacity = new_capacity;
 	}
 	return (1);
 }
 
-static int	read_un_nl(int fd, t_buffer *buffer, char **eol_pos)
+static int	read_until_newline(int fd, t_buffer *buffer, char **newline_pos)
 {
-	size_t	eol;
-	ssize_t	count;
+	size_t	search_start;
+	ssize_t	bytes_read;
 
-	eol = 0;
-	count = BUFFER_SIZE;
+	search_start = 0;
+	bytes_read = BUFFER_SIZE;
 	while (1)
 	{
-		*eol_pos = ft_memchr(buffer->data + eol, '\n',
-				buffer->length - eol);
-		if (*eol_pos != NULL || count != BUFFER_SIZE)
-			break ;
-		eol = buffer->length;
-		if (!reserve(buffer, BUFFER_SIZE))
+		*newline_pos = ft_memchr(buffer->data + search_start, '\n',
+				buffer->length - search_start);
+		if (*newline_pos != NULL || bytes_read != BUFFER_SIZE)
+			return (bytes_read);
+		search_start = buffer->length;
+		if (!ensure_capacity(buffer, BUFFER_SIZE))
 			return (-1);
-		count = read(fd, buffer->data + buffer->length, BUFFER_SIZE);
-		if (count == -1)
-			break ;
-		buffer->length += count;
+		bytes_read = read(fd, buffer->data + buffer->length, BUFFER_SIZE);
+		if (bytes_read == -1)
+			return (bytes_read);
+		buffer->length += bytes_read;
 	}
-	return (count);
 }
 
-static char	*get_line(t_buffer *buffer, char *eol_pos)
+static char	*extract_line(t_buffer *buffer, char *newline_pos)
 {
 	size_t	line_length;
 	char	*line;
 
 	line_length = 0;
-	if (eol_pos != NULL)
-		line_length = eol_pos - buffer->data + 1;
+	if (newline_pos != NULL)
+		line_length = newline_pos - buffer->data + 1;
 	else if (buffer->length > 0)
 		line_length = buffer->length;
 	line = ft_strndup(buffer->data, line_length);
@@ -82,21 +81,21 @@ static char	*get_line(t_buffer *buffer, char *eol_pos)
 char	*get_next_line(int fd)
 {
 	static t_buffer	buffer;
-	ssize_t			read_count;
-	char			*eol_pos;
+	ssize_t			bytes_read;
+	char			*newline_pos;
 	char			*line;
 
 	line = NULL;
-	read_count = read_un_nl(fd, &buffer, &eol_pos);
-	if (read_count != -1 && buffer.length > 0)
-		line = get_line(&buffer, eol_pos);
-	if (read_count <= 0 || line == NULL)
+	bytes_read = read_until_newline(fd, &buffer, &newline_pos);
+	if (bytes_read != -1 && buffer.length > 0)
+		line = extract_line(&buffer, newline_pos);
+	if (bytes_read <= 0 || line == NULL)
 	{
 		free(buffer.data);
 		buffer.data = NULL;
 		buffer.length = 0;
 		buffer.capacity = 0;
-		if (read_count == -1 || line == NULL)
+		if (bytes_read == -1 || line == NULL)
 		{
 			free(line);
 			line = NULL;
