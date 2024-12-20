@@ -6,12 +6,11 @@
 /*   By: tjooris <tjooris@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/15 15:20:37 by tjooris           #+#    #+#             */
-/*   Updated: 2024/12/20 13:26:48 by tjooris          ###   ########.fr       */
+/*   Updated: 2024/12/20 20:21:53 by tjooris          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <stdlib.h>
-#include <string.h>
 #include <stddef.h>
 #include "get_next_line.h"
 
